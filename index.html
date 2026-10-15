@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VŨ TRỤ SAO - CHỌN HỌC SINH NGẪU NHIÊN</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- MediaPipe Hands & Camera Utils -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        * {
+            font-family: 'Fredoka', 'Nunito', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: #030014;
+            color: #ffffff;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Glassmorphism Styling */
+        .glass-panel {
+            background: rgba(18, 11, 46, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Neon Glows */
+        .glow-title {
+            text-shadow: 0 0 15px #7c3aed, 0 0 30px #06b6d4, 0 0 45px #3b82f6;
+        }
+
+        .btn-galaxy {
+            background: linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6);
+            background-size: 200% 200%;
+            animation: gradientShift 4s ease infinite;
+            box-shadow: 0 0 25px rgba(139, 92, 246, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.4);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-galaxy:hover {
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 0 40px rgba(236, 72, 153, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.6);
+        }
+
+        .btn-galaxy:active {
+            transform: translateY(2px) scale(0.98);
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Star Float Animation */
+        @keyframes orbitFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(3deg); }
+        }
+
+        .floating-star {
+            animation: orbitFloat 4s ease-in-out infinite;
+        }
+
+        /* Hide scrollbars for slick UI */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Pulse ring */
+        .pulse-ring {
+            box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7);
+            animation: pulseRing 1.8s infinite;
+        }
+
+        @keyframes pulseRing {
+            0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7); }
+            70% { box-shadow: 0 0 0 18px rgba(168, 85, 247, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+        }
+
+        /* Winner Star Badge Overlay */
+        .winner-card {
+            animation: winnerPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes winnerPop {
+            0% { transform: scale(0.3) rotate(-15deg); opacity: 0; }
+            80% { transform: scale(1.1) rotate(3deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between items-center min-h-screen relative overflow-x-hidden">
+
+    <!-- Cosmic Interactive Canvas Background -->
+    <canvas id="galaxyCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+
+    <!-- TOP HEADER / BANNER -->
+    <header class="w-full max-w-6xl px-4 pt-4 z-10 flex flex-col items-center">
+        <div class="glass-panel px-8 py-3 rounded-full border-2 border-cyan-400/50 flex items-center gap-3 text-center floating-star">
+            <i class="fa-solid fa-meteor text-yellow-300 text-3xl animate-bounce"></i>
+            <h1 class="text-2xl md:text-4xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-cyan-300 uppercase glow-title">
+                VŨ TRỤ SAO - CHỌN HỌC SINH
+            </h1>
+            <i class="fa-solid fa-wand-magic-sparkles text-cyan-300 text-3xl animate-pulse"></i>
+        </div>
+        <p class="text-purple-200 text-xs md:text-sm mt-2 font-semibold tracking-wide text-center">
+            ✨ Giơ số ngón tay trước camera hoặc bấm chọn số lượng để quay thưởng ngẫu nhiên! ✨
+        </p>
+    </header>
+
+    <!-- MAIN INTERACTIVE HUB -->
+    <main class="w-full max-w-6xl px-4 my-auto z-10 flex flex-col lg:flex-row items-center justify-between gap-6 py-4">
+        
+        <!-- LEFT: GESTURE RECOGNITION & CAM PANEL -->
+        <div class="w-full lg:w-1/3 flex flex-col items-center">
+            <div class="glass-panel w-full p-4 rounded-3xl border border-purple-500/40 relative flex flex-col items-center">
+                <div class="flex items-center justify-between w-full mb-3 px-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+                        <i class="fa-solid fa-hand text-pink-400"></i> Nhận diện cử chỉ tay
+                    </span>
+                    <button id="btnToggleCam" onclick="toggleCamera()" class="bg-purple-900/80 hover:bg-purple-800 text-xs font-bold px-3 py-1.5 rounded-full border border-purple-400/50 text-purple-200 transition">
+                        <i class="fa-solid fa-video mr-1"></i> Bật Camera
+                    </button>
+                </div>
+
+                <!-- Video Feed / Placeholder Container -->
+                <div class="relative w-full aspect-video rounded-2xl overflow-hidden border-2 border-cyan-400/40 bg-black/60 flex items-center justify-center">
+                    <video id="webcam" class="w-full h-full object-cover hidden transform -scale-x-100" playsinline></video>
+                    
+                    <div id="camPlaceholder" class="flex flex-col items-center text-center p-4">
+                        <i class="fa-solid fa-hand-sparkles text-5xl text-purple-400/70 mb-2 animate-pulse"></i>
+                        <p class="text-xs text-gray-300 font-semibold">Bật camera và giơ tay (1-5 ngón) để chọn số lượng học sinh!</p>
+                    </div>
+
+                    <!-- Gesture Overlay Counter Badge -->
+                    <div id="gestureBadge" class="absolute top-3 right-3 glass-panel px-3 py-1 rounded-full border border-yellow-300 flex items-center gap-1.5 hidden shadow-lg">
+                        <span class="text-xl">🖐️</span>
+                        <span id="detectedFingersText" class="text-yellow-300 font-black text-sm">0 ngón</span>
+                    </div>
+                </div>
+
+                <!-- Manual Count Quick Selector -->
+                <div class="w-full mt-4">
+                    <label class="text-xs font-extrabold text-pink-300 uppercase tracking-wider mb-2 block text-center">
+                        Hoặc bấm chọn số lượng nhanh:
+                    </label>
+                    <div class="grid grid-cols-5 gap-2">
+                        <button onclick="setStudentCount(1)" class="count-btn glass-card hover:bg-pink-500/30 text-white font-extrabold py-2 rounded-xl border border-pink-400/40 transition text-sm active:scale-95" data-count="1">1</button>
+                        <button onclick="setStudentCount(2)" class="count-btn glass-card hover:bg-pink-500/30 text-white font-extrabold py-2 rounded-xl border border-pink-400/40 transition text-sm active:scale-95" data-count="2">2</button>
+                        <button onclick="setStudentCount(3)" class="count-btn glass-card hover:bg-pink-500/30 text-white font-extrabold py-2 rounded-xl border border-pink-400/40 transition text-sm active:scale-95" data-count="3">3</button>
+                        <button onclick="setStudentCount(4)" class="count-btn glass-card hover:bg-pink-500/30 text-white font-extrabold py-2 rounded-xl border border-pink-400/40 transition text-sm active:scale-95" data-count="4">4</button>
+                        <button onclick="setStudentCount(5)" class="count-btn glass-card hover:bg-pink-500/30 text-white font-extrabold py-2 rounded-xl border border-pink-400/40 transition text-sm active:scale-95" data-count="5">5</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER: MAIN STAGE & COSMIC SPIN WHEEL/CARDS -->
+        <div class="w-full lg:w-2/3 flex flex-col items-center">
+            <div id="stageContainer" class="w-full h-80 md:h-96 relative flex items-center justify-center border-2 border-purple-500/30 rounded-3xl glass-panel overflow-hidden p-4">
+                
+                <!-- Orbit Rings Visual -->
+                <div class="absolute w-72 h-72 md:w-96 md:h-96 border border-cyan-400/20 rounded-full animate-spin" style="animation-duration: 20s;"></div>
+                <div class="absolute w-56 h-56 md:w-72 md:h-72 border border-dashed border-pink-400/30 rounded-full animate-spin" style="animation-duration: 12s; animation-direction: reverse;"></div>
+
+                <!-- Cosmic Center Emblem -->
+                <div id="centerPlanet" class="absolute z-0 flex flex-col items-center">
+                    <div class="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-tr from-pink-500 via-purple-600 to-cyan-400 p-1 pulse-ring flex items-center justify-center">
+                        <div class="w-full h-full bg-slate-950 rounded-full flex items-center justify-center text-4xl md:text-5xl">
+                            🪐
+                        </div>
+                    </div>
+                    <span id="targetCountBadge" class="mt-3 bg-yellow-400 text-purple-950 font-black px-4 py-1 rounded-full text-xs md:text-sm border-2 border-white shadow-lg">
+                        Đang chọn: 1 học sinh
+                    </span>
+                </div>
+
+                <!-- Dynamic Flying Cards Container -->
+                <div id="studentOrbitContainer" class="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <!-- Cards positioned dynamically by JS -->
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap items-center justify-center gap-4 mt-6 w-full">
+                <button id="btnStartPick" onclick="startCosmicSelection()" class="btn-galaxy text-white font-black text-xl md:text-2xl py-4 px-10 rounded-full border-4 border-white/80 flex items-center gap-3 cursor-pointer shadow-2xl">
+                    <i class="fa-solid fa-rocket text-yellow-300 text-2xl md:text-3xl animate-bounce"></i>
+                    <span>BẮT ĐẦU CHỌN NGẪU NHIÊN</span>
+                </button>
+
+                <button onclick="openManageModal()" class="glass-panel hover:bg-white/20 text-yellow-300 font-extrabold text-sm md:text-base py-3.5 px-6 rounded-full border border-yellow-300/60 shadow-lg transition transform hover:scale-105 flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-user-gear text-lg"></i>
+                    <span>Danh sách lớp (<span id="studentCountText">0</span>)</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER STATUS BAR -->
+    <footer class="w-full max-w-6xl px-4 py-3 z-10 flex flex-col sm:flex-row items-center justify-between text-xs text-purple-300 glass-panel rounded-t-2xl border-t border-purple-500/30 gap-2">
+        <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1"><i class="fa-solid fa-circle text-emerald-400 text-[10px]"></i> Sẵn sàng quay thưởng</span>
+            <label class="flex items-center gap-1.5 cursor-pointer hover:text-white transition">
+                <input type="checkbox" id="noRepeatCheck" class="rounded accent-pink-500" onchange="toggleNoRepeat(this.checked)">
+                <span>Không chọn trùng học sinh đã gọi</span>
+            </label>
+        </div>
+        <div>
+            <span>Lớp 3/2 • Niên khóa 2026-2027</span>
+        </div>
+    </footer>
+
+    <!-- WINNER CELEBRATION MODAL -->
+    <div id="winnerModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div id="winnerCardBox" class="glass-panel border-4 border-yellow-300/80 rounded-3xl p-6 md:p-8 max-w-2xl w-full text-center relative shadow-[0_0_80px_rgba(234,179,8,0.5)] transform scale-95 opacity-0 transition-all duration-300">
+            
+            <button onclick="closeWinnerModal()" class="absolute top-3 right-3 bg-red-500/80 hover:bg-red-600 text-white w-10 h-10 rounded-full font-bold border border-white text-xl flex items-center justify-center shadow-lg transition">
+                ✕
+            </button>
+
+            <div class="text-yellow-300 text-3xl md:text-4xl font-black mb-2 animate-pulse uppercase tracking-wider glow-title">
+                🎉 VÌ SAO MAY MẮN 🎉
+            </div>
+            <p class="text-pink-200 text-sm md:text-base mb-6 font-bold">Chúc mừng các bạn học sinh xuất sắc đã được chọn!</p>
+
+            <!-- Winner List Cards Grid -->
+            <div id="winnerListGrid" class="flex flex-wrap items-center justify-center gap-4 max-h-[60vh] overflow-y-auto p-2 no-scrollbar">
+                <!-- Injected Winner Cards -->
+            </div>
+
+            <div class="mt-8 flex justify-center gap-4">
+                <button onclick="closeWinnerModal()" class="bg-gradient-to-r from-emerald-400 to-teal-600 text-white font-extrabold px-8 py-3.5 rounded-full border-2 border-white shadow-xl text-lg hover:scale-105 transition cursor-pointer">
+                    HOÀN THÀNH 🚀
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STUDENT LIST MANAGER MODAL -->
+    <div id="manageModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel border-2 border-purple-400/50 rounded-3xl p-6 max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl">
+            
+            <div class="flex justify-between items-center border-b border-purple-700/60 pb-3 mb-4">
+                <h2 class="text-xl md:text-2xl font-black text-yellow-300 flex items-center gap-2">
+                    <i class="fa-solid fa-users-gear"></i> QUẢN LÝ DANH SÁCH HỌC SINH
+                </h2>
+                <button onclick="closeManageModal()" class="text-gray-400 hover:text-white text-2xl font-bold">✕</button>
+            </div>
+
+            <!-- Tabs: Quick Add / Paste Text -->
+            <div class="flex gap-2 mb-4">
+                <button id="tabListBtn" onclick="switchTab('list')" class="flex-1 py-2 bg-purple-600 text-white font-bold text-sm rounded-xl border border-purple-400">Danh sách hiện tại</button>
+                <button id="tabImportBtn" onclick="switchTab('import')" class="flex-1 py-2 bg-purple-900/60 text-purple-300 font-bold text-sm rounded-xl border border-purple-700">Dán danh sách nhanh</button>
+            </div>
+
+            <!-- TAB 1: CURRENT LIST -->
+            <div id="tabList" class="flex-1 flex flex-col overflow-hidden">
+                <div class="flex gap-2 mb-3">
+                    <input type="text" id="newStudentName" placeholder="Nhập tên học sinh mới..." class="flex-1 bg-purple-950/80 border border-purple-400/50 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-yellow-300">
+                    <button onclick="addNewStudent()" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-5 py-2 rounded-xl text-sm transition">
+                        + Thêm
+                    </button>
+                </div>
+
+                <div id="studentItemsContainer" class="overflow-y-auto flex-1 pr-1 space-y-2 no-scrollbar my-2">
+                    <!-- Dynamic Student Rows -->
+                </div>
+            </div>
+
+            <!-- TAB 2: PASTE TEXT -->
+            <div id="tabImport" class="flex-1 flex-col hidden">
+                <p class="text-xs text-purple-200 mb-2">Dán danh sách tên học sinh (mỗi tên một dòng):</p>
+                <textarea id="importTextArea" rows="8" placeholder="Nguyễn Văn A&#10;Trần Thị B&#10;Lê Hoàng C" class="w-full bg-purple-950/90 border border-purple-400/50 rounded-2xl p-3 text-sm text-yellow-200 focus:outline-none focus:border-yellow-300 mb-3"></textarea>
+                <button onclick="processImportList()" class="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-extrabold py-2.5 rounded-xl text-sm transition">
+                    Cập nhật danh sách dán
+                </button>
+            </div>
+
+            <!-- Bottom Actions -->
+            <div class="flex flex-wrap gap-2 justify-between pt-3 border-t border-purple-700/60 mt-auto">
+                <button onclick="resetDefaultStudents()" class="bg-gray-700 hover:bg-gray-600 text-xs text-gray-200 px-4 py-2.5 rounded-xl font-bold">
+                    Khôi phục mặc định
+                </button>
+                <button onclick="clearCalledStatus()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs">
+                    Reset trạng thái đã gọi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // DEFAULT CLASS 3/2 PRESET DATA
+        const DEFAULT_STUDENTS = [
+            { id: '1', name: 'Nguyễn An Nhiên', avatar: '⭐', called: false },
+            { id: '2', name: 'Trần Bảo Minh', avatar: '🚀', called: false },
+            { id: '3', name: 'Lê Hoàng Khánh', avatar: '🌟', called: false },
+            { id: '4', name: 'Phạm Gia Hưng', avatar: '🪐', called: false },
+            { id: '5', name: 'Vũ Thùy Chi', avatar: '🌙', called: false },
+            { id: '6', name: 'Đặng Tuệ Lâm', avatar: '☄️', called: false },
+            { id: '7', name: 'Bùi Đức Anh', avatar: '🛸', called: false },
+            { id: '8', name: 'Hồ Minh Trí', avatar: '✨', called: false },
+            { id: '9', name: 'Đỗ Ngọc Hà', avatar: '☀️', called: false },
+            { id: '10', name: 'Nông Quỳnh Anh', avatar: '🌈', called: false }
+        ];
+
+        const STAR_AVATARS = ['⭐', '🌟', '🚀', '🪐', '🌙', '☄️', '🛸', '✨', '☀️', '🌈', '🔮', '👾'];
+
+        let studentList = [];
+        let selectedCount = 1;
+        let noRepeatMode = false;
+        let isCameraActive = false;
+        let cameraStream = null;
+        let handsDetector = null;
+        let isPicking = false;
+
+        // Web Audio Synthesizer
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'tick') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.setValueAtTime(554.37, now + 0.1);
+                osc.frequency.setValueAtTime(659.25, now + 0.2);
+                osc.frequency.setValueAtTime(880, now + 0.35);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.7);
+                osc.start(now);
+                osc.stop(now + 0.7);
+            } else if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.03);
+                osc.start(now);
+                osc.stop(now + 0.03);
+            }
+        }
+
+        // --- CANVASES COSMIC ANIMATION BACKGROUND ---
+        const canvas = document.getElementById('galaxyCanvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        let nebulae = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initCosmos();
+        }
+
+        function initCosmos() {
+            stars = [];
+            nebulae = [];
+
+            // Generate Stars
+            for (let i = 0; i < 180; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 2 + 0.5,
+                    alpha: Math.random(),
+                    speed: Math.random() * 0.02 + 0.005,
+                    color: ['#ffffff', '#a7f3d0', '#fef08a', '#c084fc', '#67e8f9'][Math.floor(Math.random() * 5)]
+                });
+            }
+
+            // Generate Nebulae Clouds
+            for (let i = 0; i < 5; i++) {
+                nebulae.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 250 + 150,
+                    color: ['rgba(147, 51, 234, 0.15)', 'rgba(59, 130, 246, 0.12)', 'rgba(236, 72, 153, 0.12)'][i % 3]
+                });
+            }
+        }
+
+        function drawCosmos() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Nebulae
+            nebulae.forEach(n => {
+                let grad = ctx.createRadialGradient(n.x, n.y, 10, n.x, n.y, n.radius);
+                grad.addColorStop(0, n.color);
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw & Animate Stars
+            stars.forEach(s => {
+                s.alpha += s.speed;
+                if (s.alpha > 1 || s.alpha < 0.2) s.speed = -s.speed;
+
+                ctx.save();
+                ctx.globalAlpha = Math.abs(s.alpha);
+                ctx.fillStyle = s.color;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = s.color;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            requestAnimationFrame(drawCosmos);
+        }
+
+        // --- STUDENT ORBIT RENDERER ---
+        function renderOrbitCards() {
+            const container = document.getElementById('studentOrbitContainer');
+            container.innerHTML = '';
+
+            const available = getAvailableStudents();
+            if (available.length === 0) return;
+
+            const total = Math.min(available.length, 8); // Render up to 8 surrounding cards
+            const radius = window.innerWidth < 768 ? 110 : 155;
+
+            for (let i = 0; i < total; i++) {
+                const angle = (i * (2 * Math.PI / total)) - Math.PI / 2;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+
+                const student = available[i];
+                const card = document.createElement('div');
+                card.className = 'absolute glass-card px-3 py-2 rounded-2xl flex items-center gap-2 border border-yellow-300/40 text-xs font-bold text-white shadow-xl transition-transform duration-300 pointer-events-auto cursor-pointer hover:scale-110';
+                card.style.transform = `translate(${x}px, ${y}px)`;
+                card.innerHTML = `
+                    <span class="text-base">${student.avatar}</span>
+                    <span class="truncate max-w-[80px]">${student.name}</span>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        // --- MEDIAPIPE HANDS GESTURE DETECTION ---
+        async function initHandTracking() {
+            const videoElement = document.getElementById('webcam');
+
+            handsDetector = new Hands({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+            });
+
+            handsDetector.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.65,
+                minTrackingConfidence: 0.65
+            });
+
+            handsDetector.onResults(onHandResults);
+
+            try {
+                cameraStream = new Camera(videoElement, {
+                    onFrame: async () => {
+                        if (isCameraActive) {
+                            await handsDetector.send({ image: videoElement });
+                        }
+                    },
+                    width: 480,
+                    height: 360
+                });
+                await cameraStream.start();
+            } catch (e) {
+                console.warn("Camera permission denied or failed:", e);
+                alert("Không thể kết nối camera. Bạn vẫn có thể bấm chọn số lượng bằng nút bên dưới!");
+                disableCamUI();
+            }
+        }
+
+        function countFingers(landmarks) {
+            // Landmark indices: Thumb (4), Index (8), Middle (12), Ring (16), Pinky (20)
+            let count = 0;
+
+            // Index finger
+            if (landmarks[8].y < landmarks[6].y) count++;
+            // Middle finger
+            if (landmarks[12].y < landmarks[10].y) count++;
+            // Ring finger
+            if (landmarks[16].y < landmarks[14].y) count++;
+            // Pinky finger
+            if (landmarks[20].y < landmarks[18].y) count++;
+            // Thumb (Horizontal distance check depending on orientation)
+            const thumbTip = landmarks[4];
+            const thumbIP = landmarks[3];
+            if (Math.abs(thumbTip.x - landmarks[17].x) > Math.abs(thumbIP.x - landmarks[17].x)) count++;
+
+            return count;
+        }
+
+        let gestureDebounceTimer = null;
+
+        function onHandResults(results) {
+            if (!isCameraActive) return;
+
+            const badge = document.getElementById('gestureBadge');
+            const text = document.getElementById('detectedFingersText');
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                badge.classList.remove('hidden');
+                const landmarks = results.multiHandLandmarks[0];
+                const fingers = countFingers(landmarks);
+                
+                text.innerText = `${fingers} ngón`;
+
+                if (fingers >= 1 && fingers <= 5 && !isPicking) {
+                    clearTimeout(gestureDebounceTimer);
+                    gestureDebounceTimer = setTimeout(() => {
+                        setStudentCount(fingers);
+                    }, 400);
+                }
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function toggleCamera() {
+            playSound('click');
+            const video = document.getElementById('webcam');
+            const placeholder = document.getElementById('camPlaceholder');
+            const btn = document.getElementById('btnToggleCam');
+
+            if (!isCameraActive) {
+                isCameraActive = true;
+                video.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                btn.innerHTML = `<i class="fa-solid fa-video-slash mr-1"></i> Tắt Camera`;
+                btn.classList.replace('bg-purple-900/80', 'bg-red-600/80');
+
+                if (!cameraStream) {
+                    initHandTracking();
+                }
+            } else {
+                disableCamUI();
+            }
+        }
+
+        function disableCamUI() {
+            isCameraActive = false;
+            const video = document.getElementById('webcam');
+            const placeholder = document.getElementById('camPlaceholder');
+            const btn = document.getElementById('btnToggleCam');
+            const badge = document.getElementById('gestureBadge');
+
+            video.classList.add('hidden');
+            placeholder.classList.remove('hidden');
+            badge.classList.add('hidden');
+            btn.innerHTML = `<i class="fa-solid fa-video mr-1"></i> Bật Camera`;
+            btn.classList.replace('bg-red-600/80', 'bg-purple-900/80');
+        }
+
+        // --- SELECTION CONTROL LOGIC ---
+        function setStudentCount(count) {
+            playSound('click');
+            selectedCount = count;
+            document.getElementById('targetCountBadge').innerText = `Đang chọn: ${count} học sinh`;
+
+            // Highlight button
+            document.querySelectorAll('.count-btn').forEach(btn => {
+                if (parseInt(btn.getAttribute('data-count')) === count) {
+                    btn.classList.add('bg-pink-500', 'border-yellow-300', 'scale-105');
+                } else {
+                    btn.classList.remove('bg-pink-500', 'border-yellow-300', 'scale-105');
+                }
+            });
+        }
+
+        function getAvailableStudents() {
+            if (noRepeatMode) {
+                return studentList.filter(s => !s.called);
+            }
+            return studentList;
+        }
+
+        function toggleNoRepeat(val) {
+            playSound('click');
+            noRepeatMode = val;
+            renderOrbitCards();
+        }
+
+        // --- COSMIC SPIN & SELECTION ANIMATION ---
+        function startCosmicSelection() {
+            const available = getAvailableStudents();
+
+            if (available.length === 0) {
+                alert("Tất cả học sinh đã được gọi! Vui lòng reset trạng thái hoặc tắt chế độ 'Không chọn trùng'.");
+                return;
+            }
+
+            if (isPicking) return;
+            isPicking = true;
+            playSound('click');
+
+            const btn = document.getElementById('btnStartPick');
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const container = document.getElementById('studentOrbitContainer');
+            let spinDuration = 3000;
+            let startTime = performance.now();
+            let lastTick = 0;
+
+            function animateSpin(now) {
+                let elapsed = now - startTime;
+
+                if (elapsed < spinDuration) {
+                    let progress = elapsed / spinDuration;
+                    let speed = (1 - progress) * 35 + 5;
+                    
+                    // Rotate orbit elements
+                    container.style.transform = `rotate(${elapsed * 0.8}deg) scale(${1 + Math.sin(progress * Math.PI) * 0.2})`;
+
+                    if (elapsed - lastTick > 120) {
+                        playSound('tick');
+                        lastTick = elapsed;
+                    }
+
+                    requestAnimationFrame(animateSpin);
+                } else {
+                    // Finalize Pick
+                    container.style.transform = 'rotate(0deg) scale(1)';
+                    finalizeSelection(available);
+                    
+                    isPicking = false;
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+
+            requestAnimationFrame(animateSpin);
+        }
+
+        function finalizeSelection(available) {
+            playSound('win');
+
+            // Shuffle copy
+            let shuffled = [...available].sort(() => 0.5 - Math.random());
+            let pickNum = Math.min(selectedCount, shuffled.length);
+            let winners = shuffled.slice(0, pickNum);
+
+            // Mark as called if required
+            winners.forEach(w => {
+                let found = studentList.find(s => s.id === w.id);
+                if (found) found.called = true;
+            });
+            saveStudentData();
+
+            // Render Winner Modal
+            const grid = document.getElementById('winnerListGrid');
+            grid.innerHTML = '';
+
+            winners.forEach((w, idx) => {
+                const card = document.createElement('div');
+                card.className = 'winner-card glass-panel border-2 border-yellow-300 p-5 rounded-3xl flex flex-col items-center justify-center min-w-[160px] shadow-[0_0_30px_rgba(234,179,8,0.4)]';
+                card.style.animationDelay = `${idx * 0.15}s`;
+                card.innerHTML = `
+                    <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-yellow-300 to-pink-500 p-1 flex items-center justify-center text-4xl mb-3 shadow-inner">
+                        <div class="w-full h-full bg-slate-900 rounded-full flex items-center justify-center">
+                            ${w.avatar}
+                        </div>
+                    </div>
+                    <div class="font-black text-white text-base md:text-lg drop-shadow">${w.name}</div>
+                    <div class="bg-yellow-300/20 text-yellow-300 text-[10px] font-bold px-3 py-0.5 rounded-full mt-2 border border-yellow-300/40">
+                        Ngôi Sao Lucky #${idx + 1}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            // Fireworks Confetti Effect
+            confetti({
+                particleCount: 120,
+                spread: 90,
+                origin: { y: 0.6 }
+            });
+
+            // Show Winner Modal
+            const modal = document.getElementById('winnerModal');
+            const box = document.getElementById('winnerCardBox');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                box.classList.remove('scale-95', 'opacity-0');
+                box.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            renderOrbitCards();
+            updateStudentCountUI();
+        }
+
+        function closeWinnerModal() {
+            playSound('click');
+            const box = document.getElementById('winnerCardBox');
+            box.classList.remove('scale-100', 'opacity-100');
+            box.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                document.getElementById('winnerModal').classList.add('hidden');
+            }, 200);
+        }
+
+        // --- STUDENT MANAGER MODAL & DATA LOCAL STORAGE ---
+        function loadStudentData() {
+            const saved = localStorage.getItem('galaxy_student_list');
+            if (saved) {
+                try {
+                    studentList = JSON.parse(saved);
+                } catch (e) {
+                    studentList = [...DEFAULT_STUDENTS];
+                }
+            } else {
+                studentList = [...DEFAULT_STUDENTS];
+            }
+            updateStudentCountUI();
+            renderOrbitCards();
+        }
+
+        function saveStudentData() {
+            localStorage.setItem('galaxy_student_list', JSON.stringify(studentList));
+            updateStudentCountUI();
+        }
+
+        function updateStudentCountUI() {
+            document.getElementById('studentCountText').innerText = studentList.length;
+        }
+
+        function openManageModal() {
+            playSound('click');
+            renderStudentItems();
+            document.getElementById('manageModal').classList.remove('hidden');
+        }
+
+        function closeManageModal() {
+            playSound('click');
+            document.getElementById('manageModal').classList.add('hidden');
+            renderOrbitCards();
+        }
+
+        function switchTab(tab) {
+            playSound('click');
+            const tabList = document.getElementById('tabList');
+            const tabImport = document.getElementById('tabImport');
+            const tabListBtn = document.getElementById('tabListBtn');
+            const tabImportBtn = document.getElementById('tabImportBtn');
+
+            if (tab === 'list') {
+                tabList.classList.remove('hidden');
+                tabImport.classList.add('hidden');
+                tabListBtn.className = "flex-1 py-2 bg-purple-600 text-white font-bold text-sm rounded-xl border border-purple-400";
+                tabImportBtn.className = "flex-1 py-2 bg-purple-900/60 text-purple-300 font-bold text-sm rounded-xl border border-purple-700";
+            } else {
+                tabList.classList.add('hidden');
+                tabImport.classList.remove('hidden');
+                tabImportBtn.className = "flex-1 py-2 bg-purple-600 text-white font-bold text-sm rounded-xl border border-purple-400";
+                tabListBtn.className = "flex-1 py-2 bg-purple-900/60 text-purple-300 font-bold text-sm rounded-xl border border-purple-700";
+            }
+        }
+
+        function renderStudentItems() {
+            const container = document.getElementById('studentItemsContainer');
+            container.innerHTML = '';
+
+            studentList.forEach((s, idx) => {
+                const row = document.createElement('div');
+                row.className = 'bg-purple-900/50 p-2.5 rounded-xl border border-purple-700/60 flex items-center justify-between gap-2';
+                row.innerHTML = `
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="text-xs font-bold text-purple-300 w-6">#${idx + 1}</span>
+                        <span class="text-xl">${s.avatar}</span>
+                        <span class="text-sm font-bold text-white truncate ${s.called ? 'line-through opacity-50' : ''}">${s.name}</span>
+                        ${s.called ? '<span class="text-[10px] bg-red-500/80 px-2 py-0.5 rounded-full">Đã gọi</span>' : ''}
+                    </div>
+                    <button onclick="deleteStudent('${s.id}')" class="text-red-400 hover:text-red-300 p-1.5 rounded-lg text-xs">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function addNewStudent() {
+            const input = document.getElementById('newStudentName');
+            const val = input.value.trim();
+            if (!val) return;
+
+            const randomAvatar = STAR_AVATARS[Math.floor(Math.random() * STAR_AVATARS.length)];
+            studentList.push({
+                id: Date.now().toString(),
+                name: val,
+                avatar: randomAvatar,
+                called: false
+            });
+
+            input.value = '';
+            saveStudentData();
+            renderStudentItems();
+        }
+
+        function deleteStudent(id) {
+            studentList = studentList.filter(s => s.id !== id);
+            saveStudentData();
+            renderStudentItems();
+        }
+
+        function processImportList() {
+            const area = document.getElementById('importTextArea');
+            const lines = area.value.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+            if (lines.length === 0) return;
+
+            studentList = lines.map((name, i) => ({
+                id: (Date.now() + i).toString(),
+                name: name,
+                avatar: STAR_AVATARS[i % STAR_AVATARS.length],
+                called: false
+            }));
+
+            area.value = '';
+            saveStudentData();
+            switchTab('list');
+            renderStudentItems();
+        }
+
+        function clearCalledStatus() {
+            studentList.forEach(s => s.called = false);
+            saveStudentData();
+            renderStudentItems();
+            alert("Đã xóa trạng thái 'Đã gọi' cho toàn bộ học sinh!");
+        }
+
+        function resetDefaultStudents() {
+            if (confirm("Khôi phục danh sách học sinh Lớp 3/2 mặc định?")) {
+                studentList = [...DEFAULT_STUDENTS];
+                saveStudentData();
+                renderStudentItems();
+            }
+        }
+
+        // --- INIT ON LOAD ---
+        window.addEventListener('resize', resizeCanvas);
+
+        window.onload = function() {
+            resizeCanvas();
+            drawCosmos();
+            loadStudentData();
+            setStudentCount(1);
+        };
+    </script>
+</body>
+</html>
